@@ -1,0 +1,57 @@
+// tests/spree.test.js
+const { test, expect } = require('@playwright/test');
+
+test('Spree Commerce - End-to-End Checkout Flow', async ({ page }) => {
+  // Visit homepage
+  await page.goto('https://demo.spreecommerce.org');
+
+  // Sign up
+  await page.click('text=Login');
+  await page.click('text=Create a new account');
+  const email = `user${Date.now()}@test.com`;
+  await page.fill('#spree_user_email', email);
+  await page.fill('#spree_user_password', 'Test1234');
+  await page.fill('#spree_user_password_confirmation', 'Test1234');
+  await page.click('text=Create');
+  await expect(page).toHaveURL(/account/);
+
+  // Log out and log in again
+  await page.click('text=Logout');
+  await page.click('text=Login');
+  await page.fill('#spree_user_email', email);
+  await page.fill('#spree_user_password', 'Test1234');
+  await page.click('text=Login');
+  await expect(page).toHaveURL(/account/);
+
+  // Browse and view a product
+  await page.click('text=Ruby on Rails Bag');
+  await expect(page.locator('h1')).toContainText('Ruby on Rails Bag');
+
+  // Add to cart
+  await page.click('text=Add To Cart');
+  await expect(page.locator('text=Cart')).toBeVisible();
+
+  // Go to cart and verify
+  await page.click('text=Cart');
+  await expect(page.locator('text=Ruby on Rails Bag')).toBeVisible();
+
+  // Proceed to checkout
+  await page.click('text=Checkout');
+
+  // Fill shipping address
+  await page.fill('#order_bill_address_attributes_firstname', 'John');
+  await page.fill('#order_bill_address_attributes_lastname', 'Doe');
+  await page.fill('#order_bill_address_attributes_address1', '123 Main St');
+  await page.fill('#order_bill_address_attributes_city', 'Manila');
+  await page.selectOption('#order_bill_address_attributes_country_id', 'PH');
+  await page.fill('#order_bill_address_attributes_zipcode', '1000');
+  await page.fill('#order_bill_address_attributes_phone', '09123456789');
+  await page.click('text=Save and Continue');
+
+  // Continue through shipping and payment
+  await page.click('text=Save and Continue');
+  await page.click('text=Save and Continue');
+
+  // Order confirmation
+  await expect(page.locator('text=Your order has been processed successfully')).toBeVisible();
+});
